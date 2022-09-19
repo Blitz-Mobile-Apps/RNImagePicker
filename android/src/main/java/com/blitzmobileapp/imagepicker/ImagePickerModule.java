@@ -27,6 +27,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -112,12 +113,20 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
                         try {
                             imageUri = data.getData();
                             Log.d("BASE_64", encodeImage(imageUri, reactContext));
-                            callback.invoke(imageUri.toString());
+                            UCrop uCrop = UCrop
+                                    .of(imageUri, Uri.fromFile(new File(reactContext.getCacheDir(), new Date().toString() + ".jpg")));
+                            uCrop.start(activity);
+
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                     break;
+
+                case UCrop.REQUEST_CROP:
+                    imageUri = UCrop.getOutput(data);
+                    callback.invoke(imageUri.toString());
+
             }
         }
     };
