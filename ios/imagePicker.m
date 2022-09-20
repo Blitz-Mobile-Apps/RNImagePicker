@@ -77,7 +77,7 @@ RCT_EXPORT_MODULE(imagePicker);
 
 
 
-RCT_EXPORT_METHOD(openImagePicker:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 {
     
@@ -101,147 +101,103 @@ RCT_EXPORT_METHOD(openImagePicker:(RCTPromiseResolveBlock)resolve rejecter:(RCTP
         
         picker.allowsEditing = YES;
         
+        globalResolve = resolve;
+        globalReject = reject;
+        
+        
+        
+        //        if(camera)
+        
+//        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotification:) name:@"_UIImagePickerControllerUserDidCaptureItem" object:nil ];
+        CGSize screenSize = [[UIScreen mainScreen] bounds].size;
+        picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        picker.showsCameraControls = YES;
+        float cameraAspectRatio = 4.0 / 3.0;
+        float imageWidth = floorf(screenSize.width * cameraAspectRatio);
+        float scale = ceilf((screenSize.height / imageWidth) * 10.0) / 10.0;
+        picker.cameraViewTransform = CGAffineTransformMakeScale(scale, scale);
+        [rootViewController presentViewController:picker animated:YES completion:nil];
+        
+        
+        // if(gallery)
+//        picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+//        [rootViewController presentViewController:picker animated:YES completion:nil];
+        
+        
+        //          cameraButton.frame = CGRect(x: 0, y: 0, width: 75, height: 75)
+        
+        //          cameraButton.backgroundColor = .clear
+        
+        //          cameraButton.layer.borderWidth = 6
+        
+        //          cameraButton.layer.borderColor = UIColor.white.cgColor
+        
+        //          cameraButton.layer.masksToBounds = true
+        
+        //          cameraButton.setTitleColor(UIColor.white, for: .normal)
+        
+        //          cameraButton.layer.cornerRadius = 75/2
+        
+        //          cameraButton.layer.position = CGPoint(x: self.view.frame.width/2, y:self.view.frame.height - 60)
+        
+        
+        //
+        //            UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        //
+        //            [button addTarget:self
+        //
+        //                       action:@selector(aMethod:)
+        //
+        //             forControlEvents:UIControlEventTouchUpInside];
+        //
+        //           button.frame = CGRectMake(screenSize.width/2-35, screenSize.height - 120, 70.0, 70.0);
+        //
+        //          button.layer.borderWidth = 6;
+        //
+        //          button.layer.borderColor = UIColor.whiteColor.CGColor;
+        //
+        //          button.layer.masksToBounds = true;
+        //
+        //          button.layer.cornerRadius = 70/2;
+        //
+        ////          [button setImage:<#(nullable UIImage *)#> forState:<#(UIControlState)#>:@"Tap" forState:UIControlStateNormal];
+        //
+        //
+        //
+        ////            [picker.cameraOverlayView addSubview:button];
+        //
+        //          picker.cameraOverlayView = button;
+        
+        // Device's screen size (ignoring rotation intentionally):
         
         
         
         
         
+        // iOS is going to calculate a size which constrains the 4:3 aspect ratio
+        
+        // to the screen size. We're basically mimicking that here to determine
+        
+        // what size the system will likely display the image at on screen.
+        
+        // NOTE: screenSize.width may seem odd in this calculation - but, remember,
+        
+        // the devices only take 4:3 images when they are oriented *sideways*.
+        //          [picker.view setFrame:CGRectMake(80.0, 210.0, 160.0, 40.0)]
+        
+        //          [picker ]
+        
+        //        [picker did]
         
         
         
         
         
-        
-        
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Image Source" message:@"Please select your desired image source" preferredStyle:UIAlertControllerStyleAlert];
-        
-        [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-            NSError *error = nil;
-            reject(@"message", @"User cancelled",error);
-            // Called when user taps outside
-            
-        }]];
-        
-        
-        
-        
-        
-        UIAlertAction *camera = [UIAlertAction actionWithTitle:@"Camera" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            
-            //button click event
-            
-            globalResolve = resolve;
-            globalReject = reject;
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotification:) name:@"_UIImagePickerControllerUserDidCaptureItem" object:nil ];
-            
-            CGSize screenSize = [[UIScreen mainScreen] bounds].size;
-            
-            picker.sourceType = UIImagePickerControllerSourceTypeCamera;
-            
-            
-            
-            picker.showsCameraControls = YES;
-            
-            //          cameraButton.frame = CGRect(x: 0, y: 0, width: 75, height: 75)
-            
-            //          cameraButton.backgroundColor = .clear
-            
-            //          cameraButton.layer.borderWidth = 6
-            
-            //          cameraButton.layer.borderColor = UIColor.white.cgColor
-            
-            //          cameraButton.layer.masksToBounds = true
-            
-            //          cameraButton.setTitleColor(UIColor.white, for: .normal)
-            
-            //          cameraButton.layer.cornerRadius = 75/2
-            
-            //          cameraButton.layer.position = CGPoint(x: self.view.frame.width/2, y:self.view.frame.height - 60)
-            
-            
-            //
-            //            UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-            //
-            //            [button addTarget:self
-            //
-            //                       action:@selector(aMethod:)
-            //
-            //             forControlEvents:UIControlEventTouchUpInside];
-            //
-            //           button.frame = CGRectMake(screenSize.width/2-35, screenSize.height - 120, 70.0, 70.0);
-            //
-            //          button.layer.borderWidth = 6;
-            //
-            //          button.layer.borderColor = UIColor.whiteColor.CGColor;
-            //
-            //          button.layer.masksToBounds = true;
-            //
-            //          button.layer.cornerRadius = 70/2;
-            //
-            ////          [button setImage:<#(nullable UIImage *)#> forState:<#(UIControlState)#>:@"Tap" forState:UIControlStateNormal];
-            //
-            //
-            //
-            ////            [picker.cameraOverlayView addSubview:button];
-            //
-            //          picker.cameraOverlayView = button;
-            
-            // Device's screen size (ignoring rotation intentionally):
-            
-            
-            
-            
-            
-            // iOS is going to calculate a size which constrains the 4:3 aspect ratio
-            
-            // to the screen size. We're basically mimicking that here to determine
-            
-            // what size the system will likely display the image at on screen.
-            
-            // NOTE: screenSize.width may seem odd in this calculation - but, remember,
-            
-            // the devices only take 4:3 images when they are oriented *sideways*.
-            
-            float cameraAspectRatio = 4.0 / 3.0;
-            
-            float imageWidth = floorf(screenSize.width * cameraAspectRatio);
-            
-            float scale = ceilf((screenSize.height / imageWidth) * 10.0) / 10.0;
-            
-            
-            
-            picker.cameraViewTransform = CGAffineTransformMakeScale(scale, scale);
-            
-            //          [picker.view setFrame:CGRectMake(80.0, 210.0, 160.0, 40.0)]
-            
-            //          [picker ]
-            
-            //        [picker did]
-            
-            [rootViewController presentViewController:picker animated:YES completion:nil];
-            
-        }];
-        
-        
-        
-        UIAlertAction *library = [UIAlertAction actionWithTitle:@"Library" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            globalResolve = resolve;
-            globalReject = reject;
-            
-            
-            picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-            
-            [rootViewController presentViewController:picker animated:YES completion:nil];
-            
-        }];
-        
-        
-        
-        [alert addAction:camera];
-        
-        [alert addAction:library];
-        
-        [rootViewController presentViewController:alert animated:YES completion:nil];
+//        [alert addAction:camera];
+//
+//        [alert addAction:library];
+//
+//        [rootViewController presentViewController:alert animated:YES completion:nil];
         
         //      [rootViewController presentingViewController:alert animated:YES co]
         
@@ -543,7 +499,7 @@ RCT_EXPORT_METHOD(openImagePicker:(RCTPromiseResolveBlock)resolve rejecter:(RCTP
         
     {
         
-//        [self sendEventWithName:@"onError" body:@{@"message": @"Failed to cache image data to disk"}];
+        //        [self sendEventWithName:@"onError" body:@{@"message": @"Failed to cache image data to disk"}];
         if(globalReject != nil){
             NSError *e =  nil;
             globalReject(@"message", @"Failed to cache image data to disk",e);
@@ -564,7 +520,7 @@ RCT_EXPORT_METHOD(openImagePicker:(RCTPromiseResolveBlock)resolve rejecter:(RCTP
             globalResolve(@{@"data": imagePicked,@"uri": imageURI});
             globalResolve = nil;
         }
-//        [self sendEventWithName:@"onSuccess" body:@{@"data": imagePicked,@"uri": imageURI}];
+        //        [self sendEventWithName:@"onSuccess" body:@{@"data": imagePicked,@"uri": imageURI}];
         
     }
     
