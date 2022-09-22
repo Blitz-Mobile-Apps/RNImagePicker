@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "rn-image-picker"
-  s.version      = "2.0.5"
+  s.version      = "2.0.6"
   s.homepage     = "https://salsoftmobile@bitbucket.org/salsoftmobileapphq/rn-image-picker.git"
 
   s.summary      = "rn-image-picker"
@@ -18,6 +18,7 @@ Pod::Spec.new do |s|
   s.dependency "UIImage+ImageCompress"
   s.dependency "CLImageEditor/AllTools"
   s.dependency "React"
+  s.dependency "ELCImagePickerController"
 end
 
   

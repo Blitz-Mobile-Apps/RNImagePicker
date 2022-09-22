@@ -9,14 +9,14 @@
 #import <React/RCTConvert.h>
 
 #import "CLImageEditor.h"
-
+#import "ELCImagePickerController.h"
 #import "UIImage+ImageCompress.h"
-
+#import "HelperFunctions.h"
 
 
 @interface UIViewController()
 
-<CLImageEditorDelegate>
+<CLImageEditorDelegate, ELCImagePickerControllerDelegate>
 
 @end
 
@@ -28,7 +28,7 @@
 
 //extern NSMutableDictionary *imagePickedData;
 
-extern NSString *imagePicked = @"";
+extern NSString *imageBase64 = @"";
 
 extern bool *sendImage = true;
 
@@ -40,6 +40,13 @@ extern NSInteger *count = 0;
 extern RCTPromiseResolveBlock globalResolve = nil;
 extern RCTPromiseRejectBlock globalReject = nil;
 
+//options
+extern NSString *selection = @"";
+extern BOOL *includeBase64  = false;
+extern BOOL *selectMultiple  = false;
+extern int selectionLimit = 2;
+extern float compressionRatio = 0;
+NSMutableArray * imagesArray ;
 
 UIImagePickerController *picker;
 
@@ -71,20 +78,16 @@ RCT_EXPORT_MODULE(imagePicker);
     
 }
 
-
-
-
-
-
-
 RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 {
     
     //  NSLog(@"Recieved Type: %@",notificationData);
     
-    imagePicked = @"";
-    
+    selection = [options valueForKey:@"selection"];
+    includeBase64 = [[options valueForKey:@"includeBase64" ]boolValue];
+    selectMultiple = [[options valueForKey:@"selectMultiple" ]boolValue];
+    selectionLimit = [[options valueForKey:@"selectionLimit"] intValue];
     imageURI = @"";
     
     sendImage = true;
@@ -106,143 +109,45 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
         
         
         
-        //        if(camera)
-        
-//        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotification:) name:@"_UIImagePickerControllerUserDidCaptureItem" object:nil ];
-        CGSize screenSize = [[UIScreen mainScreen] bounds].size;
-        picker.sourceType = UIImagePickerControllerSourceTypeCamera;
-        picker.showsCameraControls = YES;
-        float cameraAspectRatio = 4.0 / 3.0;
-        float imageWidth = floorf(screenSize.width * cameraAspectRatio);
-        float scale = ceilf((screenSize.height / imageWidth) * 10.0) / 10.0;
-        picker.cameraViewTransform = CGAffineTransformMakeScale(scale, scale);
-        [rootViewController presentViewController:picker animated:YES completion:nil];
-        
-        
-        // if(gallery)
-//        picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-//        [rootViewController presentViewController:picker animated:YES completion:nil];
-        
-        
-        //          cameraButton.frame = CGRect(x: 0, y: 0, width: 75, height: 75)
-        
-        //          cameraButton.backgroundColor = .clear
-        
-        //          cameraButton.layer.borderWidth = 6
-        
-        //          cameraButton.layer.borderColor = UIColor.white.cgColor
-        
-        //          cameraButton.layer.masksToBounds = true
-        
-        //          cameraButton.setTitleColor(UIColor.white, for: .normal)
-        
-        //          cameraButton.layer.cornerRadius = 75/2
-        
-        //          cameraButton.layer.position = CGPoint(x: self.view.frame.width/2, y:self.view.frame.height - 60)
-        
-        
-        //
-        //            UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-        //
-        //            [button addTarget:self
-        //
-        //                       action:@selector(aMethod:)
-        //
-        //             forControlEvents:UIControlEventTouchUpInside];
-        //
-        //           button.frame = CGRectMake(screenSize.width/2-35, screenSize.height - 120, 70.0, 70.0);
-        //
-        //          button.layer.borderWidth = 6;
-        //
-        //          button.layer.borderColor = UIColor.whiteColor.CGColor;
-        //
-        //          button.layer.masksToBounds = true;
-        //
-        //          button.layer.cornerRadius = 70/2;
-        //
-        ////          [button setImage:<#(nullable UIImage *)#> forState:<#(UIControlState)#>:@"Tap" forState:UIControlStateNormal];
-        //
-        //
-        //
-        ////            [picker.cameraOverlayView addSubview:button];
-        //
-        //          picker.cameraOverlayView = button;
-        
-        // Device's screen size (ignoring rotation intentionally):
-        
-        
-        
-        
-        
-        // iOS is going to calculate a size which constrains the 4:3 aspect ratio
-        
-        // to the screen size. We're basically mimicking that here to determine
-        
-        // what size the system will likely display the image at on screen.
-        
-        // NOTE: screenSize.width may seem odd in this calculation - but, remember,
-        
-        // the devices only take 4:3 images when they are oriented *sideways*.
-        //          [picker.view setFrame:CGRectMake(80.0, 210.0, 160.0, 40.0)]
-        
-        //          [picker ]
-        
-        //        [picker did]
-        
-        
-        
-        
-        
-//        [alert addAction:camera];
-//
-//        [alert addAction:library];
-//
-//        [rootViewController presentViewController:alert animated:YES completion:nil];
-        
-        //      [rootViewController presentingViewController:alert animated:YES co]
-        
-        //      [rootViewController presentingViewController]
-        
-        //      [rootViewController presentationController]
-        
-        
-        
+        if([selection isEqual:@"camera"])
+        {
+            CGSize screenSize = [[UIScreen mainScreen] bounds].size;
+            picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+            picker.showsCameraControls = YES;
+            float cameraAspectRatio = 4.0 / 3.0;
+            float imageWidth = floorf(screenSize.width * cameraAspectRatio);
+            float scale = ceilf((screenSize.height / imageWidth) * 10.0) / 10.0;
+            picker.cameraViewTransform = CGAffineTransformMakeScale(scale, scale);
+            [rootViewController presentViewController:picker animated:YES completion:nil];
+        }else if ([selection isEqual:@"gallery"]){
+            if(selectMultiple == YES){
+                imagesArray = [[NSMutableArray alloc] init];
+                ELCImagePickerController *imagePicker = [[ELCImagePickerController alloc] init];
+                imagePicker.maximumImagesCount = selectionLimit; //Set the maximum number of images to select, defaults to 4
+                imagePicker.imagePickerDelegate = self;
+                
+                [rootViewController presentViewController:imagePicker animated:YES completion:nil];
+            }else{
+                picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+                [rootViewController presentViewController:picker animated:YES completion:nil];
+            }
+            
+        }else{
+            
+        }
     });
     
 }
 
--(void)aMethod:(UIButton *) sender {
-    
-    NSLog(@"Test button");
-    
-    [picker takePicture];
-    
+
+- (void)elcImagePickerController:(ELCImagePickerController *)picker didFinishPickingMediaWithInfo:(NSArray *)info{
+    [imagesArray addObjectsFromArray: info];
+    imagesArray = [HelperFunctions compressImages:imagesArray compressionRatio:(float) 0];
+    [picker dismissViewControllerAnimated:YES completion:nil];
 }
 
--(void)handleNotification:(NSNotification *)message {
-    
-    if ([[message name] isEqualToString:@"_UIImagePickerControllerUserDidCaptureItem"]) {
-        
-        // Remove overlay, so that it is not available on the preview view;
-        
-        //     [picker dismissViewControllerAnimated:YES completion:nil];
-        
-        //        [picker did]
-        
-        NSLog(@"Test NSnotification");
-        
-    }
-    
-    if ([[message name] isEqualToString:@"_UIImagePickerControllerUserDidRejectItem"]) {
-        
-        // Retake button pressed on preview. Add overlay, so that is available on the camera again
-        
-        //        picker.cameraOverlayView = [addCameraRollButton];
-        
-        picker.cameraOverlayView = nil;
-        
-    }
-    
+- (void)elcImagePickerControllerDidCancel:(ELCImagePickerController *)picker{
+    [picker dismissViewControllerAnimated:YES completion:nil];
 }
 
 
@@ -254,150 +159,129 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
         globalReject = nil;
     }
     sendImage = false;
-    
     [picker dismissViewControllerAnimated:YES completion:nil];
     
 };
 
-
-
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
-    
-    
     
     UIImage *chosenImage = info[UIImagePickerControllerOriginalImage];
     
-    imagePickedWithoutCompression = [self encodeToBase64String:(chosenImage)];
-    
-    NSLog(@"imageEditorimagePickerController: %@",chosenImage);
-    
-    //  imagePicked = [self encodeToBase64String:(chosenImage)];
-    
-    //  NSLog(@"imagePicked: %@",imagePicked);
-    
     long imageDataSize = CGImageGetHeight(chosenImage.CGImage) * CGImageGetBytesPerRow(chosenImage.CGImage)/ 1024 / 1024;
     
-    NSLog(@"imagePickedSize: %@",[NSString stringWithFormat:@"%li", imageDataSize]);
-    
-    
-    
-    
-    
     CLImageEditor *editor = [[CLImageEditor alloc] initWithImage:chosenImage];
-    
-    
     
     editor.delegate = self;
     
     CLImageToolInfo *tool;
     
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLFilterTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultVignetteFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultEmptyFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultLinearFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultInstantFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultProcessFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultTransferFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultSepiaFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultChromeFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultFadeFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultCurveFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultTonalFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultNoirFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultMonoFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultInvertFilter" recursive:YES];
-    
-    tool.available = NO;
-    
-    
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLAdjustmentTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLEffectTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDrawTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLSplashTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLBlurTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLStickerTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLToneCurveTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLEmoticonTool" recursive:YES];
-    
-    tool.available = NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLResizeTool" recursive:YES];
-    
-    tool.available=NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLRotateTool" recursive:YES];
-    
-    tool.available=NO;
-    
-    tool = [editor.toolInfo subToolInfoWithToolName:@"CLTextTool" recursive:NO];
-    
-    tool.available = NO;
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLFilterTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultVignetteFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultEmptyFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultLinearFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultInstantFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultProcessFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultTransferFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultSepiaFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultChromeFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultFadeFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultCurveFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultTonalFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultNoirFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultMonoFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDefaultInvertFilter" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLAdjustmentTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLEffectTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLDrawTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLSplashTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLBlurTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLStickerTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLToneCurveTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLEmoticonTool" recursive:YES];
+    //
+    //    tool.available = NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLResizeTool" recursive:YES];
+    //
+    //    tool.available=NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLRotateTool" recursive:YES];
+    //
+    //    tool.available=NO;
+    //
+    //    tool = [editor.toolInfo subToolInfoWithToolName:@"CLTextTool" recursive:NO];
+    //
+    //    tool.available = NO;
     
     
     
@@ -459,27 +343,20 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
 
 #pragma mark- CLImageEditor delegate
 
-
-
 - (void)imageEditor:(CLImageEditor *)editor didFinishEdittingWithImage:(UIImage *)image
 
 {
-    
-    NSLog(@"imageEditor: %@",image);
-    
     UIImage *compressedImage = [UIImage compressImage:image compressRatio:0.9f];
     
-    imagePicked = [self encodeToBase64String:(compressedImage)];
-    
-    
+    if(includeBase64 == YES){
+        imageBase64 = [HelperFunctions encodeToBase64String:(compressedImage)];
+    }else{
+        imageBase64= NULL;
+    }
     
     NSData *imageData = UIImagePNGRepresentation(compressedImage);
     
-    NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,
-                                                           
-                                                           NSUserDomainMask,
-                                                           
-                                                           YES) lastObject];
+    NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
     
     NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%d", count];    // does not need to be released. Needs to be retained if you need to keep use it after the current function.
     
@@ -489,78 +366,40 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
     
     count = count + 1;
     
-    
-    
-    
-    
-    NSLog(@"pre writing to file");
-    
     if (![imageData writeToFile:imagePath atomically:NO])
-        
     {
-        
-        //        [self sendEventWithName:@"onError" body:@{@"message": @"Failed to cache image data to disk"}];
         if(globalReject != nil){
             NSError *e =  nil;
             globalReject(@"message", @"Failed to cache image data to disk",e);
             globalReject = nil;
         }
         NSLog(@"Failed to cache image data to disk");
-        
     }
     
-    else
-        
-    {
-        
+    else{
         NSLog(@"the cachedImagedPath is %@",imagePath);
-        
         imageURI = imagePath;
         if(globalResolve != nil){
-            globalResolve(@{@"data": imagePicked,@"uri": imageURI});
+            if(includeBase64){
+                globalResolve(@{@"data": imageBase64,@"uri": imageURI});
+            }else{
+                globalResolve(@{@"uri": imageURI});
+            }
+            
             globalResolve = nil;
         }
-        //        [self sendEventWithName:@"onSuccess" body:@{@"data": imagePicked,@"uri": imageURI}];
-        
     }
     
-    
-    
-    long imageDataSize = CGImageGetHeight(image.CGImage) * CGImageGetBytesPerRow(image.CGImage) / 1024 / 1024;
-    
-    long compressedimageDataSize = CGImageGetHeight(compressedImage.CGImage) * CGImageGetBytesPerRow(compressedImage.CGImage) / 1024 / 1024;
-    
-    NSLog(@"imagePickedEdittedSize: %@",[NSString stringWithFormat:@"%li", imageDataSize]);
-    
-    NSLog(@"imagePickedEdittedCompressedSize: %@",[NSString stringWithFormat:@"%li", compressedimageDataSize]);
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
         UIApplication *application = UIApplication.sharedApplication;
-        
         UIViewController *rootViewController = RCTPresentedViewController();
-        
         [rootViewController dismissViewControllerAnimated:YES completion:nil];
-        
-        
         
     });
     
-    
-    
-    //  picker = NULL;
-    
     editor = NULL;
-    
-    
-    
-}
-
-
-
-- (NSString *)encodeToBase64String:(UIImage *)image {
-    
-    return [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
     
 }
 
