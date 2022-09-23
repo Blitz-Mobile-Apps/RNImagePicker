@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (UIImage *)resizeImage:(UIImage *)image;
 + (NSString *)encodeToBase64String:(UIImage *)image;
 + (NSMutableArray *)compressImages: (NSMutableArray *)images compressionRatio:(float)compressionRatio;
++ (NSDictionary *) generateImageObject: (UIImage *)image includeBase64:(BOOL)includeBase64;
++ (NSDictionary *) generateImagesArray: (NSMutableArray<UIImage *> *)imagesArray includeBase64:(BOOL)includeBase64;
 @end
 
 NS_ASSUME_NONNULL_END

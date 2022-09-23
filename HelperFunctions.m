@@ -65,6 +65,68 @@
     return imagesArray;
 }
 
++ (NSDictionary *) generateImageObject: (UIImage *)image includeBase64:(BOOL)includeBase64 {
+    
+    NSString * imageBase64 = @"";
+    
+    if(includeBase64 == YES){
+        imageBase64 = [self encodeToBase64String:(image)];
+    }else{
+        imageBase64= NULL;
+    }
+    
+    NSData *imageData = UIImagePNGRepresentation(image);
+    NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
+    NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%@", [[NSUUID UUID] UUIDString]];
+    NSString *imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png",aString]];
+    
+    if (![imageData writeToFile:imagePath atomically:NO]){
+        return (@{@"error": @"error"});
+    }else{
+        if(includeBase64){
+            return (@{@"base64": imageBase64,@"uri": imagePath});
+        }else{
+            return (@{@"uri": imagePath});
+        }
+    }
+}
+
++ (NSDictionary *) generateImagesArray: (NSMutableArray<UIImage *> *)imagesArray includeBase64:(BOOL)includeBase64 {
+    
+    
+    NSMutableArray * imageObjectsArray = [[NSMutableArray alloc] init];
+    
+    for(int i= 0; i< imagesArray.count; i++){
+        NSString * imageBase64 = @"";
+        if(includeBase64 == YES){
+            imageBase64 = [self encodeToBase64String:(imagesArray[i])];
+        }else{
+            imageBase64= NULL;
+        }
+        
+        NSData *imageData = UIImagePNGRepresentation(imagesArray[i]);
+        NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
+        NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%@", [[NSUUID UUID] UUIDString]];
+        NSString *imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png",aString]];
+        
+        if (![imageData writeToFile:imagePath atomically:NO]){
+            return (@{@"error": @"error"});
+        }else{
+            if(includeBase64){
+                [imageObjectsArray addObject:@{@"base64": imageBase64,@"uri": imagePath}];
+                
+            }else{
+                [imageObjectsArray addObject:@{@"uri": imagePath}];
+            }
+        }
+        
+    }
+    if (imageObjectsArray.count == 0){
+        return (@{@"error": @"error"});
+    }else{
+        return (@{@"data":imageObjectsArray});
+    }
+}
 
 
 

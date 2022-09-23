@@ -3,6 +3,7 @@ export interface ImagePickerOptions {
   selectionLimit?: number;
   mediaType: MediaType;
   quality?: PhotoQuality;
+  compressionRatio: number;
   includeBase64?: boolean;
   selectMultiple?: boolean;
 

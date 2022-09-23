@@ -45,7 +45,8 @@ extern NSString *selection = @"";
 extern BOOL *includeBase64  = false;
 extern BOOL *selectMultiple  = false;
 extern int selectionLimit = 2;
-extern float compressionRatio = 0;
+extern float compressionRatio = 1;
+
 NSMutableArray * imagesArray ;
 
 UIImagePickerController *picker;
@@ -88,6 +89,7 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
     includeBase64 = [[options valueForKey:@"includeBase64" ]boolValue];
     selectMultiple = [[options valueForKey:@"selectMultiple" ]boolValue];
     selectionLimit = [[options valueForKey:@"selectionLimit"] intValue];
+    compressionRatio = [[options valueForKey:@"compressionRatio"] floatValue];
     imageURI = @"";
     
     sendImage = true;
@@ -140,17 +142,35 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
 }
 
 
+#pragma mark- Multiple Images Picker delegate
+
 - (void)elcImagePickerController:(ELCImagePickerController *)picker didFinishPickingMediaWithInfo:(NSArray *)info{
     [imagesArray addObjectsFromArray: info];
-    imagesArray = [HelperFunctions compressImages:imagesArray compressionRatio:(float) 0];
+    imagesArray = [HelperFunctions compressImages:imagesArray compressionRatio: compressionRatio];
+    NSDictionary* imageObjectsArray = [[HelperFunctions generateImagesArray:imagesArray includeBase64:includeBase64] valueForKey:@"data"];
+    globalResolve(imageObjectsArray);
+    
     [picker dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)elcImagePickerControllerDidCancel:(ELCImagePickerController *)picker{
-    [picker dismissViewControllerAnimated:YES completion:nil];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIApplication *application = UIApplication.sharedApplication;
+        
+        UIViewController *rootViewController = RCTPresentedViewController();
+        if(globalReject != nil){
+            NSError *e =  nil;
+            globalReject(@"message", @"User cancelled the selection",e);
+            globalReject = nil;
+        }
+        [rootViewController dismissViewControllerAnimated:YES completion:nil];
+    });
+    
 }
 
 
+#pragma mark- Single Image Picker delegate
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
     if(globalReject != nil){
@@ -316,81 +336,26 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
 
 
 
-
-
-
-
-
-- (void)imageEditorDidCancel:(CLImageEditor *)editor
-
-{
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        UIApplication *application = UIApplication.sharedApplication;
-        
-        UIViewController *rootViewController = RCTPresentedViewController();
-        if(globalReject != nil){
-            NSError *e =  nil;
-            globalReject(@"message", @"User cancelled the selection",e);
-            globalReject = nil;
-        }
-        [rootViewController dismissViewControllerAnimated:YES completion:nil];
-        
-    });
-    
-}
-
 #pragma mark- CLImageEditor delegate
 
 - (void)imageEditor:(CLImageEditor *)editor didFinishEdittingWithImage:(UIImage *)image
 
 {
-    UIImage *compressedImage = [UIImage compressImage:image compressRatio:0.9f];
+    NSDictionary* imageObject = [HelperFunctions generateImageObject:image includeBase64:includeBase64];
     
-    if(includeBase64 == YES){
-        imageBase64 = [HelperFunctions encodeToBase64String:(compressedImage)];
-    }else{
-        imageBase64= NULL;
-    }
-    
-    NSData *imageData = UIImagePNGRepresentation(compressedImage);
-    
-    NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
-    
-    NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%d", count];    // does not need to be released. Needs to be retained if you need to keep use it after the current function.
-    
-    //  [aString appendFormat:@"... now has another int: %d", count];
-    
-    NSString *imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png",aString]];
-    
-    count = count + 1;
-    
-    if (![imageData writeToFile:imagePath atomically:NO])
-    {
+    if([[[imageObject valueForKey:@"error"] stringValue] isEqualToString:@"error"]){
         if(globalReject != nil){
             NSError *e =  nil;
             globalReject(@"message", @"Failed to cache image data to disk",e);
             globalReject = nil;
         }
-        NSLog(@"Failed to cache image data to disk");
-    }
-    
-    else{
-        NSLog(@"the cachedImagedPath is %@",imagePath);
-        imageURI = imagePath;
+    }else{
         if(globalResolve != nil){
-            if(includeBase64){
-                globalResolve(@{@"data": imageBase64,@"uri": imageURI});
-            }else{
-                globalResolve(@{@"uri": imageURI});
-            }
-            
+            globalResolve(imageObject);
             globalResolve = nil;
         }
     }
-    
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
         
         UIApplication *application = UIApplication.sharedApplication;
@@ -401,6 +366,23 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
     
     editor = NULL;
     
+}
+
+- (void)imageEditorDidCancel:(CLImageEditor *)editor
+
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIApplication *application = UIApplication.sharedApplication;
+        
+        UIViewController *rootViewController = RCTPresentedViewController();
+        if(globalReject != nil){
+            NSError *e =  nil;
+            globalReject(@"message", @"User cancelled the selection",e);
+            globalReject = nil;
+        }
+        [rootViewController dismissViewControllerAnimated:YES completion:nil];
+    });
+
 }
 
 @end
