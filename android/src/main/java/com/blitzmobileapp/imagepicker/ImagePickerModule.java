@@ -2,18 +2,20 @@ package com.blitzmobileapp.imagepicker;
 
 
 import static androidx.core.app.ActivityCompat.startActivityForResult;
-import static com.blitzmobileapp.imagepicker.Utils.PICK_FROM_CAMERA;
-import static com.blitzmobileapp.imagepicker.Utils.PICK_FROM_GALLERY;
-import static com.blitzmobileapp.imagepicker.Utils.encodeImage;
-import static com.blitzmobileapp.imagepicker.Utils.setSelectionType;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.PICK_FROM_CAMERA;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.PICK_FROM_GALLERY;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.createObject;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.encodeImage;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.mapOptions;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.mapToArray;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.setSelectionType;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -21,20 +23,23 @@ import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.yalantis.ucrop.UCrop;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Objects;
+import java.util.UUID;
 
 
 public class ImagePickerModule extends ReactContextBaseJavaModule {
@@ -42,6 +47,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
     //Written By Ayesh
     public Callback callback;
     static Uri imageUri = null;
+    public static WritableArray imageUriArray = Arguments.createArray();
+    public static String selection;
+    public static Boolean includeBase64;
+    public static Boolean selectMultiple;
+    public static int selectionLimit;
+    public static float compressionRatio;
     private ReactApplicationContext reactContext;
 
     ImagePickerModule(ReactApplicationContext context) {
@@ -62,31 +73,38 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
         //Written By Ayesh
         imageUri = null;
         this.callback = callback;
+//        selection = [options valueForKey:@"selection"];
+//        includeBase64 = [[options valueForKey:@"includeBase64" ]boolValue];
+//        selectMultiple = [[options valueForKey:@"selectMultiple" ]boolValue];
+//        selectionLimit = [[options valueForKey:@"selectionLimit"] intValue];
+//        compressionRatio = [[options valueForKey:@"compressionRatio"] floatValue];
+
         try {
-            if (options.hasKey("selection")) {
-                if (setSelectionType(Objects.requireNonNull(options.getString("selection"))) == 1) {
-                    Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                    File file = new File(reactContext.getCacheDir(), new Date().toString() + ".jpg");
+            mapOptions(options);
+            if (setSelectionType(Objects.requireNonNull(selection)) == 1) {
+                Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                File file = new File(reactContext.getCacheDir(), UUID.randomUUID() + ".png");
 
-                    imageUri = FileProvider.getUriForFile(
-                            reactContext,
-                            getReactApplicationContext().getPackageName() + ".provider",
-                            file);
-                    captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                imageUri = FileProvider.getUriForFile(
+                        reactContext,
+                        getReactApplicationContext().getPackageName() + ".provider",
+                        file);
+                captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
 
-                    startActivityForResult(
-                            getCurrentActivity(),
-                            captureIntent,
-                            PICK_FROM_CAMERA,
-                            null);
-                    if (imageUri == null) {
-                        callback.invoke("Some Error Occured");
-                    }
-                } else {
-                    Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    startActivityForResult(getCurrentActivity(), galleryIntent, PICK_FROM_GALLERY, null);
+                startActivityForResult(
+                        getCurrentActivity(),
+                        captureIntent,
+                        PICK_FROM_CAMERA,
+                        null);
+                if (imageUri == null) {
+                    callback.invoke("Some Error Occured");
                 }
+            } else {
+                Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                if (selectMultiple) galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(getCurrentActivity(), galleryIntent, PICK_FROM_GALLERY, null);
             }
+
         } catch (Exception ex) {
             Log.d("RNIMAGE_PICKER", ex.toString());
         }
@@ -111,11 +129,16 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
                 case PICK_FROM_GALLERY:
                     if (resultCode == Activity.RESULT_OK) {
                         try {
-                            imageUri = data.getData();
-                            Log.d("BASE_64", encodeImage(imageUri, reactContext));
-                            UCrop uCrop = UCrop
-                                    .of(imageUri, Uri.fromFile(new File(reactContext.getCacheDir(), new Date().toString() + ".jpg")));
-                            uCrop.start(activity);
+                            if (selectMultiple) {
+                                mapToArray(data.getClipData(), callback, reactContext);
+                            } else {
+                                imageUri = data.getData();
+                                Log.d("BASE_64", encodeImage(imageUri, reactContext));
+                                UCrop uCrop = UCrop
+                                        .of(imageUri, Uri.fromFile(new File(reactContext.getCacheDir(), new Date().toString() + ".png")));
+                                uCrop.start(reactContext.getCurrentActivity());
+                            }
+
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -125,10 +148,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
 
                 case UCrop.REQUEST_CROP:
                     imageUri = UCrop.getOutput(data);
-                    callback.invoke(imageUri.toString());
+                    callback.invoke(createObject("uri",imageUri.toString()));
 
             }
         }
     };
+
+
 }
 
