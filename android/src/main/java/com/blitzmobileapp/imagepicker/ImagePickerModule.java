@@ -9,6 +9,7 @@ import static com.blitzmobileapp.imagepicker.HelperFunctions.encodeImage;
 import static com.blitzmobileapp.imagepicker.HelperFunctions.mapOptions;
 import static com.blitzmobileapp.imagepicker.HelperFunctions.mapToArray;
 import static com.blitzmobileapp.imagepicker.HelperFunctions.setSelectionType;
+import static com.blitzmobileapp.imagepicker.HelperFunctions.storeInCacheWithUri;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -53,7 +54,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
     public static Boolean selectMultiple;
     public static int selectionLimit;
     public static float compressionRatio;
-    private ReactApplicationContext reactContext;
+    public static ReactApplicationContext reactContext;
 
     ImagePickerModule(ReactApplicationContext context) {
         super(context);
@@ -118,7 +119,6 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
                 case PICK_FROM_CAMERA:
                     if (resultCode == Activity.RESULT_OK) {
                         try {
-                            Log.d("BASE_64", encodeImage(imageUri, reactContext));
                             callback.invoke(imageUri.toString());
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -133,7 +133,6 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
                                 mapToArray(data.getClipData(), callback, reactContext);
                             } else {
                                 imageUri = data.getData();
-                                Log.d("BASE_64", encodeImage(imageUri, reactContext));
                                 UCrop uCrop = UCrop
                                         .of(imageUri, Uri.fromFile(new File(reactContext.getCacheDir(), new Date().toString() + ".png")));
                                 uCrop.start(reactContext.getCurrentActivity());
@@ -148,7 +147,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
 
                 case UCrop.REQUEST_CROP:
                     imageUri = UCrop.getOutput(data);
-                    callback.invoke(createObject("uri",imageUri.toString()));
+                    callback.invoke(createObject(storeInCacheWithUri(imageUri)));
+
 
             }
         }

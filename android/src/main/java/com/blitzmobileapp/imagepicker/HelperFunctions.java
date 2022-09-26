@@ -2,6 +2,7 @@ package com.blitzmobileapp.imagepicker;
 
 import static com.blitzmobileapp.imagepicker.ImagePickerModule.compressionRatio;
 import static com.blitzmobileapp.imagepicker.ImagePickerModule.imageUriArray;
+import static com.blitzmobileapp.imagepicker.ImagePickerModule.reactContext;
 import static com.blitzmobileapp.imagepicker.ImagePickerModule.selectionLimit;
 import static com.blitzmobileapp.imagepicker.ImagePickerModule.selection;
 import static com.blitzmobileapp.imagepicker.ImagePickerModule.includeBase64;
@@ -14,6 +15,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.core.content.FileProvider;
 
@@ -29,6 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.UUID;
 
 public class HelperFunctions {
@@ -88,21 +91,14 @@ public class HelperFunctions {
     }
 
     public static void mapToArray(ClipData data, Callback callback, Context reactContext) throws IOException {
+        imageUriArray = Arguments.createArray();
         if (data.getItemCount() >= selectionLimit) {
             if (data != null) {
                 for (int i = 0; i < selectionLimit; i++) {
-                    File file = new File(reactContext.getCacheDir(), UUID.randomUUID() + ".png");
-                    file.createNewFile();
-                    FileOutputStream ostream = new FileOutputStream(file);
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(reactContext.getContentResolver(), data.getItemAt(i).getUri());
-                    bitmap.compress(Bitmap.CompressFormat.PNG, (int) compressionRatio * 100, ostream);
-                    ostream.close();
-                    Uri uri = FileProvider.getUriForFile(
-                            reactContext,
-                            reactContext.getApplicationContext().getPackageName() + ".provider",
-                            file);
-                    imageUriArray.pushMap(createObject("uri", uri.toString()));
+                    imageUriArray.pushMap(createObject(Objects.requireNonNull(storeInCacheWithUri(data.getItemAt(i).getUri()))));
                 }
+                Log.d("ARRAY",imageUriArray.size()+"");
+                Log.d("ARRAY",imageUriArray.toString()+"");
                 callback.invoke(imageUriArray);
 
             }
@@ -110,9 +106,36 @@ public class HelperFunctions {
         }
     }
 
-    public static WritableMap createObject(String key, String value) {
+    public static WritableMap createObject( Uri uri) {
         WritableMap obj = Arguments.createMap();
-        obj.putString(key, value);
+        obj.putString("uri", uri.toString());
+        if(includeBase64){
+            try {
+                obj.putString("base64", encodeImage(uri,reactContext));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
         return obj;
+    }
+
+    public static Uri storeInCacheWithUri(Uri imageUri){
+        File file = new File(reactContext.getCacheDir(), UUID.randomUUID() + ".webp");
+        try {
+            file.createNewFile();
+            FileOutputStream ostream = new FileOutputStream(file);
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(reactContext.getContentResolver(), imageUri);
+            bitmap.compress(Bitmap.CompressFormat.WEBP, (int) compressionRatio * 100, ostream);
+            ostream.close();
+            Uri uri = FileProvider.getUriForFile(
+                    reactContext,
+                    reactContext.getApplicationContext().getPackageName() + ".provider",
+                    file);
+            return  uri;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
