@@ -1,7 +1,8 @@
+
 {
-  "name": "react-native-advanced-image-picker",
+  "name": "rn-image-picker",
   "version": "2.0.6",
-  "description": "###### Installation `yarn add git+https://salsoftmobile@bitbucket.org/salsoftmobileapphq/rn-image-picker.git`",
+  "description": "",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,13 +10,9 @@
   "keywords": [
     "react-native"
   ],
-  "author": "Ethan Gray",
-  "license": "MIT",
+  "author": "",
+  "license": "",
   "peerDependencies": {
     "react-native": "^0.62.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "ethan:Blitz-Mobile-Apps/RNImagePicker.git"
   }
 }
