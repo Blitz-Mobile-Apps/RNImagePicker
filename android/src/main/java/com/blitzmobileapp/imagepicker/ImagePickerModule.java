@@ -35,6 +35,12 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.yalantis.ucrop.UCrop;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -130,7 +136,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
                     if (resultCode == Activity.RESULT_OK) {
                         try {
                             if (selectMultiple) {
-                                mapToArray(data.getClipData(), callback, reactContext);
+                                mapToArray(Objects.requireNonNull(Objects.requireNonNull(data).getClipData()), callback, reactContext);
                             } else {
                                 imageUri = data.getData();
                                 UCrop uCrop = UCrop
@@ -153,6 +159,21 @@ public class ImagePickerModule extends ReactContextBaseJavaModule {
             }
         }
     };
+    @ReactMethod
+    public static void uploadImage(Uri uri){
+        File image = new File(uri.getPath());
+        FileBody fileBody = new FileBody(image);
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+                .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+                .addTextBody("params", "{....}")
+                .addPart("my_file", fileBody);
+        HttpEntity multiPartEntity = builder.build();
+
+        String url = "....";
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.setEntity(multiPartEntity);
+
+    }
 
 
 }

@@ -25,6 +25,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -92,9 +93,9 @@ public class HelperFunctions {
 
     public static void mapToArray(ClipData data, Callback callback, Context reactContext) throws IOException {
         imageUriArray = Arguments.createArray();
-        if (data.getItemCount() >= selectionLimit) {
+        if (data.getItemCount() <= selectionLimit) {
             if (data != null) {
-                for (int i = 0; i < selectionLimit; i++) {
+                for (int i = 0; i < data.getItemCount(); i++) {
                     imageUriArray.pushMap(createObject(Objects.requireNonNull(storeInCacheWithUri(data.getItemAt(i).getUri()))));
                 }
                 Log.d("ARRAY",imageUriArray.size()+"");
@@ -138,4 +139,6 @@ public class HelperFunctions {
 
         return null;
     }
+
+
 }
