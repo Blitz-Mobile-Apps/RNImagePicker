@@ -341,8 +341,8 @@ RCT_EXPORT_METHOD(openImagePicker:(NSDictionary *)options resolver:(RCTPromiseRe
 - (void)imageEditor:(CLImageEditor *)editor didFinishEdittingWithImage:(UIImage *)image
 
 {
-    NSDictionary* imageObject = [HelperFunctions generateImageObject:image includeBase64:includeBase64];
-    
+    NSDictionary* imageObject =[HelperFunctions generateImageObject:image includeBase64:includeBase64 compressionRatio:compressionRatio];
+
     if([[[imageObject valueForKey:@"error"] stringValue] isEqualToString:@"error"]){
         if(globalReject != nil){
             NSError *e =  nil;

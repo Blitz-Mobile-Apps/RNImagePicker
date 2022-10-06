@@ -65,7 +65,7 @@
     return imagesArray;
 }
 
-+ (NSDictionary *) generateImageObject: (UIImage *)image includeBase64:(BOOL)includeBase64 {
++ (NSDictionary *) generateImageObject: (UIImage *)image includeBase64:(BOOL)includeBase64 compressionRatio:(float)compressionRatio {
     
     NSString * imageBase64 = @"";
     
@@ -74,11 +74,20 @@
     }else{
         imageBase64= NULL;
     }
+    NSData *imageData;
+    NSString *imagePath;
+    if(compressionRatio){
+        imageData = UIImageJPEGRepresentation(image, compressionRatio);
+        NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
+        NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%@", [[NSUUID UUID] UUIDString]];
+        imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.jpg",aString]];
+    }else{
+        imageData = UIImagePNGRepresentation(image);
+        NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
+        NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%@", [[NSUUID UUID] UUIDString]];
+        imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png",aString]];
+    }
     
-    NSData *imageData = UIImagePNGRepresentation(image);
-    NSString* paths = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory,NSUserDomainMask,YES) lastObject];
-    NSMutableString* aString = [NSMutableString stringWithFormat:@"cached%@", [[NSUUID UUID] UUIDString]];
-    NSString *imagePath =[paths stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png",aString]];
     
     if (![imageData writeToFile:imagePath atomically:NO]){
         return (@{@"error": @"error"});
