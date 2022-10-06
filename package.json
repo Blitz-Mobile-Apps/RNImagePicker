@@ -1,24 +1,23 @@
 {
-  "name": "react-native-advanced-image-picker",
-  "version": "2.0.6",
-  "description": "An advanced image picker with image editing and cropping feature.",
+  "name": "@blitzmobileapps/react-native-advanced-image-picker",
+  "version": "1.0.1",
+  "description": "This is a more extended version of image picker with image cropping and compressing feature",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "react-native",
-    "image-picker",
-    "image-cropper",
-    "image-caching"
-  ],
-  "author": "Ethan",
-  "license": "MIT",
-  "peerDependencies": {
-    "react-native": "^0.62.0"
-  },
   "repository": {
     "type": "git",
     "url": "ethan:Blitz-Mobile-Apps/RNImagePicker.git"
-  }
+  },
+  "keywords": [
+    "react-native",
+    "image-picker",
+    "picker",
+    "cropper",
+    "image-compress",
+    "advanced-picker"
+  ],
+  "author": "",
+  "license": "ISC"
 }
