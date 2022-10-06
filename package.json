@@ -1,6 +1,6 @@
 {
   "name": "@blitzmobileapps/react-native-advanced-image-picker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "This is a more extended version of image picker with image cropping, caching and compressing feature",
   "main": "index.ts",
   "scripts": {
