@@ -1,6 +1,6 @@
 
 import { Alert, InteractionManager, NativeModules, Platform } from 'react-native';
-import { ImagePickerOptions } from 'rn-image-picker/types';
+import { ImagePickerOptions } from './types';
 const { imagePicker } = NativeModules;
 
 
